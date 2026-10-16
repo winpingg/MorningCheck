@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>早自修任務控制台 🦌</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #fdf6ed;
+            --panel-left-bg: #ffffff;
+            --panel-left-border: #f4c286;
+            --panel-left-shadow: rgba(244, 194, 134, 0.3);
+            
+            --panel-right-bg: #f2f7e8;
+            --panel-right-border: #aed581;
+            --panel-right-shadow: rgba(174, 213, 129, 0.35);
+
+            --title-color: #8d4f18;
+            --item-bg: #fffbf0;
+            --item-border: #ffe0b2;
+            --text-color: #5d3a1a;
+            
+            --btn-bg: #ffe082;
+            --btn-border: #ffa726;
+            --btn-text: #8d4f18;
+            --btn-hover: #ffcc80;
+
+            --clock-border: #7cb342;
+            --clock-num: #43a047;
+            --hand-hour: #5d4037;
+            --hand-minute: #3e2723;
+            --hand-second: #e53935;
+            
+            --deer-accent: #c17938;
+        }
+
+        body, html { 
+            margin: 0; padding: 0; 
+            height: 100vh; width: 100vw;
+            font-family: 'Kiwi Maru', sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            overflow: hidden; 
+            user-select: none;
+        }
+        
+        .main-container { 
+            display: flex; 
+            height: 100vh; 
+            width: 100vw;
+            box-sizing: border-box;
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        /* 左半邊：任務區 (佔 42%) */
+        .left-panel {
+            flex: 0.42;
+            display: flex;
+            flex-direction: column;
+            background: var(--panel-left-bg);
+            border-radius: 32px;
+            border: 6px solid var(--panel-left-border); 
+            padding: 22px;
+            box-shadow: 0 10px 30px var(--panel-left-shadow);
+            position: relative;
+        }
+
+        .header-row { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 12px; 
+            border-bottom: 3px dashed var(--panel-left-border);
+            padding-bottom: 12px;
+        }
+        
+        h2 { 
+            color: var(--title-color); 
+            font-size: 2.8rem; 
+            margin: 0; 
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .save-btn { 
+            padding: 10px 20px; background-color: var(--btn-bg); 
+            color: var(--btn-text); border: 3px solid var(--btn-border); border-radius: 18px; 
+            cursor: pointer; font-size: 1.2rem; font-weight: bold;
+            box-shadow: 0 4px 12px rgba(220, 140, 50, 0.15);
+            transition: all 0.2s ease-in-out;
+            font-family: 'Kiwi Maru', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .save-btn:hover { 
+            background-color: var(--btn-hover); 
+            transform: translateY(-2px) scale(1.03); 
+            box-shadow: 0 6px 16px rgba(220, 140, 50, 0.25);
+        }
+        .save-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .todo-list { 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            flex: 1;
+            gap: 10px;
+            margin-top: 6px;
+        }
+        
+        /* 任務方塊：可愛鹿兒森林風 */
+        .todo-item { 
+            background: var(--item-bg); 
+            padding: 4px 16px; 
+            border-radius: 20px;
+            border: 3px solid var(--item-border); 
+            display: flex; 
+            align-items: center; 
+            box-shadow: 0 4px 10px rgba(180, 120, 60, 0.05);
+            font-size: 2.1rem; 
+            font-weight: bold;
+            color: var(--text-color);
+            outline: none;
+            height: 13%;
+            overflow: hidden;
+            position: relative;
+            transition: border-color 0.2s, background-color 0.2s;
+            user-select: text;
+        }
+        
+        .todo-item:focus {
+            border-color: var(--btn-border);
+            background-color: #ffffff;
+        }
+
+        .todo-item::before { 
+            content: '🌿'; 
+            margin-right: 12px; 
+            font-size: 1.8rem; 
+            flex-shrink: 0; 
+            user-select: none;
+        }
+        
+        .todo-item img {
+            max-height: 90%;
+            max-width: 85%;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 右半邊：鹿角時鐘與時間區 (佔 58%) */
+        .right-panel {
+            flex: 0.58;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--panel-right-bg); 
+            border-radius: 32px;
+            border: 6px solid var(--panel-right-border); 
+            box-shadow: 0 10px 30px var(--panel-right-shadow);
+            padding: 20px;
+            position: relative;
+        }
+
+        /* 時鐘容器與鹿耳朵裝飾 */
+        .clock-wrapper {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        /* 時鐘本體 */
+        .analog-clock {
+            width: 430px;
+            height: 430px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: 14px solid var(--clock-border); 
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.04), 0 12px 28px rgba(100, 160, 60, 0.15);
+        }
+
+        /* 可愛鹿頭中心點 */
+        .clock-center {
+            width: 28px;
+            height: 28px;
+            background-color: #d87d4a; 
+            border: 3px solid #7c3f1d;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        /* 鹿鼻子紅點 */
+        .clock-center::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 10px;
+            background-color: #e53935;
+            border-radius: 50%;
+        }
+
+        /* 可愛鹿角裝飾 */
+        .antler-left, .antler-right {
+            position: absolute;
+            top: -42px;
+            font-size: 4rem;
+            z-index: 1;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        }
+        .antler-left { left: 40px; transform: rotate(-22deg); }
+        .antler-right { right: 40px; transform: rotate(22deg) scaleX(-1); }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom;
+            border-radius: 8px;
+        }
+
+        .hour-hand {
+            width: 12px;
+            height: 120px;
+            background-color: var(--hand-hour);
+            transform: translateX(-50%) rotate(0deg);
+            z-index: 3;
+        }
+
+        .minute-hand {
+            width: 8px;
+            height: 165px;
+            background-color: var(--hand-minute);
+            transform: translateX(-50%) rotate(0deg);
+            z-index: 4;
+        }
+
+        .second-hand {
+            width: 4px;
+            height: 185px;
+            background-color: var(--hand-second);
+            transform: translateX(-50%) rotate(0deg);
+            z-index: 5;
+        }
+
+        /* 數字靠邊框排列 */
+        .clock-num {
+            position: absolute;
+            font-size: 2.7rem;
+            font-weight: 700;
+            font-family: 'Kiwi Maru', sans-serif;
+            color: var(--clock-num);
+            width: 55px;
+            height: 55px;
+            text-align: center;
+            line-height: 55px;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+
+        /* 12小時制超大電子時鐘 */
+        #digital-clock { 
+            font-size: 5.8rem; 
+            font-weight: 700; 
+            color: #43a047; 
+            line-height: 1; 
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 0px #ffffff, 4px 4px 10px rgba(0,0,0,0.05);
+        }
+        
+        #date { 
+            font-size: 2.2rem; 
+            color: #558b2f; 
+            font-weight: 700;
+            background: #ffffff;
+            padding: 6px 24px;
+            border-radius: 20px;
+            border: 2px solid #c5e1a5;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        }
+
+        /* 自訂可愛 Toast 提示框 */
+        .toast {
+            position: fixed;
+            bottom: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff8e1;
+            color: #8d4f18;
+            border: 3px solid #ffb300;
+            padding: 12px 28px;
+            border-radius: 25px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toast.show {
+            bottom: 35px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <!-- 左半邊：6項任務 -->
+    <div class="left-panel">
+        <div class="header-row">
+            <h2><span>🦌</span> 早自修任務</h2>
+            <button class="save-btn" onclick="saveTasks()">💾 儲存修改</button>
+        </div>
+        
+        <div class="todo-list">
+            <div class="todo-item" contenteditable="true">1.</div>
+            <div class="todo-item" contenteditable="true">2.</div>
+            <div class="todo-item" contenteditable="true">3.</div>
+            <div class="todo-item" contenteditable="true">4.</div>
+            <div class="todo-item" contenteditable="true">5.</div>
+            <div class="todo-item" contenteditable="true">6.</div>
+        </div>
+    </div>
+
+    <!-- 右半邊：鹿角指針時鐘 + 電子時鐘 -->
+    <div class="right-panel">
+        <div class="clock-wrapper">
+            <div class="antler-left">🦌</div>
+            <div class="antler-right">🦌</div>
+            <div class="analog-clock" id="analog-clock">
+                <div class="clock-center"></div>
+                <div class="hand hour-hand" id="hour-hand"></div>
+                <div class="hand minute-hand" id="minute-hand"></div>
+                <div class="hand second-hand" id="second-hand"></div>
+            </div>
+        </div>
+
+        <div id="digital-clock">00:00</div>
+        <div id="date">0000 年 00 月 00 日</div>
+    </div>
+</div>
+
+<div id="toast" class="toast">✨ 任務內容已經成功存起來囉！</div>
+
+<script>
+    // 產生時鐘大數字
+    const clockElement = document.getElementById('analog-clock');
+    const radius = 175; 
+
+    for (let i = 1; i <= 12; i++) {
+        const numDiv = document.createElement('div');
+        numDiv.className = 'clock-num';
+        numDiv.textContent = i;
+        
+        const angle = (i * 30) * (Math.PI / 180);
+        const x = 215 + radius * Math.sin(angle);
+        const y = 215 - radius * Math.cos(angle);
+        
+        numDiv.style.left = `${x}px`;
+        numDiv.style.top = `${y}px`;
+        clockElement.appendChild(numDiv);
+    }
+
+    function updateClock() {
+        const now = new Date();
+        
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+
+        const hourDeg = (hours % 12) * 30 + minutes * 0.5;
+        const minuteDeg = minutes * 6 + seconds * 0.1;
+        const secondDeg = seconds * 6;
+
+        document.getElementById('hour-hand').style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+        document.getElementById('minute-hand').style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
+        document.getElementById('second-hand').style.transform = `translateX(-50%) rotate(${secondDeg}deg)`;
+
+        const timeOptions = { hour12: true, hour: 'numeric', minute: '2-digit' };
+        const dateOptions = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        
+        document.getElementById('digital-clock').textContent = now.toLocaleTimeString('zh-TW', timeOptions);
+        document.getElementById('date').textContent = now.toLocaleDateString('zh-TW', dateOptions);
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 顯示自訂提示訊息
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2500);
+    }
+
+    // 儲存任務（完整保留圖片與文字 HTML 結構）
+    function saveTasks() {
+        const items = document.querySelectorAll('.todo-item');
+        const tasksHTML = Array.from(items).map(item => item.innerHTML);
+        localStorage.setItem('morningDeerTasksV1', JSON.stringify(tasksHTML));
+        showToast('🌲 已幫你記住今天的早自修任務囉！');
+    }
+
+    // 載入任務
+    function loadTasks() {
+        const saved = localStorage.getItem('morningDeerTasksV1');
+        if (saved) {
+            const tasksHTML = JSON.parse(saved);
+            const items = document.querySelectorAll('.todo-item');
+            tasksHTML.forEach((html, i) => { if (items[i]) items[i].innerHTML = html; });
+        }
+    }
+    window.onload = loadTasks;
+</script>
+</body>
+</html>
